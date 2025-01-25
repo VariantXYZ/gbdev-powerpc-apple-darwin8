@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout libpng
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: pnggroup/libpng.git
           ref: f753baae52e1f0fd5451c25de8f8361ec5aea95f
