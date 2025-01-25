@@ -37,7 +37,7 @@ jobs:
 
       - name: Build target
         run: |
-          mkdir -p deploy
+          mkdir -p $GITHUB_WORKSPACE/deploy
           mkdir -p target_build
           cd target_build
           echo "" > config.site-powerpc-apple-darwin8
@@ -45,7 +45,7 @@ jobs:
           echo "ac_cv_file__dev_ptc=no" >> config.site-powerpc-apple-darwin8
           echo "ac_cv_enable_implicit_function_declaration_error=no" >> config.site-powerpc-apple-darwin8
           echo "ac_cv_disable_int_conversion_warning=yes" >> config.site-powerpc-apple-darwin8
-          PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH MACOSX_DEPLOYMENT_TARGET=10.4 MACHDEP=Darwin CONFIG_SITE=./config.site-powerpc-apple-darwin8 ../cpython/configure CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" BLDSHARED="powerpc-apple-darwin8-gcc -Wl,-undefined,suppress -Wl,-flat_namespace -shared" LDSHARED="powerpc-apple-darwin8-gcc" AS="powerpc-apple-darwin8-as" AR="powerpc-apple-darwin8-ar" RANLIB="powerpc-apple-darwin8-ranlib" CFLAGS="-mmacosx-version-min=10.4 --include "sys/types.h" -include "sys/socket.h" -include "sys/uio.h"" LDFLAGS="-mmacosx-version-min=10.4 -static-libstdc++ -static-libgcc" --disable-ipv6 --prefix=/deploy --host=powerpc-apple-darwin8 --build=$(gcc -dumpmachine) --with-build-python=../host_build/python --with-ensurepip=no
+          PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH MACOSX_DEPLOYMENT_TARGET=10.4 MACHDEP=Darwin CONFIG_SITE=./config.site-powerpc-apple-darwin8 ../cpython/configure CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" BLDSHARED="powerpc-apple-darwin8-gcc -Wl,-undefined,suppress -Wl,-flat_namespace -shared" LDSHARED="powerpc-apple-darwin8-gcc" AS="powerpc-apple-darwin8-as" AR="powerpc-apple-darwin8-ar" RANLIB="powerpc-apple-darwin8-ranlib" CFLAGS="-mmacosx-version-min=10.4 --include "sys/types.h" -include "sys/socket.h" -include "sys/uio.h"" LDFLAGS="-mmacosx-version-min=10.4 -static-libstdc++ -static-libgcc" --disable-ipv6 --prefix=$GITHUB_WORKSPACE/deploy --host=powerpc-apple-darwin8 --build=$(gcc -dumpmachine) --with-build-python=../host_build/python --with-ensurepip=no
           PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH make -j2
           PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH make install -j
 
