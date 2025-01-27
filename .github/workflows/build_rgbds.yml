@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:main
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-13.3-macosxsdk10.4u
 
     steps:
       - name: Checkout libpng
