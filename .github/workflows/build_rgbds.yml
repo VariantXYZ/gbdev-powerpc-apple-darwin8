@@ -15,6 +15,10 @@ jobs:
     container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-13.3-macosxsdk10.4u
 
     steps:
+      - name: Create output directory
+        run: |
+          mkdir -p deploy
+
       - name: Checkout libpng
         uses: actions/checkout@v4
         with:
@@ -26,7 +30,7 @@ jobs:
         run: |
           mkdir -p build_libpng
           cd build_libpng
-          LDFLAGS="-static-libstdc++ -static-libgcc" CXX=powerpc-apple-darwin8-g++ CC=powerpc-apple-darwin8-g++ ../libpng/configure --prefix=/usr/local/powerpc-apple-darwin8 --host=powerpc-apple-darwin8
+          LDFLAGS="-static-libstdc++ -static-libgcc" CXX=powerpc-apple-darwin8-g++ CC=powerpc-apple-darwin8-g++ ../libpng/configure --prefix=$(realpath ../deploy) --host=powerpc-apple-darwin8
           make -j
           make install -j
 
@@ -44,9 +48,8 @@ jobs:
 
       - name: Build rgbds
         run: |
-          mkdir -p deploy
           cd rgbds
-          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j LDFLAGS="-static-libstdc++ -static-libgcc" PNGCFLAGS="" PNGLDFLAGS="-lpng" PNGLDLIBS="" CXX=powerpc-apple-darwin8-g++ CC=powerpc-apple-darwin8-gcc CXXFLAGS="-D__STDC_FORMAT_MACROS" PREFIX=../deploy
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j LDFLAGS="-static-libstdc++ -static-libgcc" PNGCFLAGS="-I../deploy/include" PNGLDFLAGS="-L../deploy/lib -lpng" PNGLDLIBS="" CXX=powerpc-apple-darwin8-g++ CC=powerpc-apple-darwin8-gcc CXXFLAGS="-D__STDC_FORMAT_MACROS" PREFIX=../deploy
 
       - name: 'Archive'
         uses: actions/upload-artifact@v4
