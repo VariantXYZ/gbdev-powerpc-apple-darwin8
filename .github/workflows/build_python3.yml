@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.5
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.4u
 
     steps:
       - name: Checkout cpython
@@ -45,7 +45,7 @@ jobs:
           echo "ac_cv_file__dev_ptc=no" >> config.site-powerpc-apple-darwin8
           echo "ac_cv_enable_implicit_function_declaration_error=no" >> config.site-powerpc-apple-darwin8
           echo "ac_cv_disable_int_conversion_warning=yes" >> config.site-powerpc-apple-darwin8
-          PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH MACOSX_DEPLOYMENT_TARGET=10.4 MACHDEP=Darwin CONFIG_SITE=./config.site-powerpc-apple-darwin8 ../cpython/configure CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" BLDSHARED="powerpc-apple-darwin8-gcc -Wl,-undefined,suppress -Wl,-flat_namespace -shared" LDSHARED="powerpc-apple-darwin8-gcc" AS="powerpc-apple-darwin8-as" AR="powerpc-apple-darwin8-ar" RANLIB="powerpc-apple-darwin8-ranlib" CFLAGS="-mmacosx-version-min=10.4 --include "sys/types.h" -include "sys/socket.h" -include "sys/uio.h"" LDFLAGS="-mmacosx-version-min=10.4 -static-libstdc++ -static-libgcc" --disable-ipv6 --prefix=$GITHUB_WORKSPACE/deploy --host=powerpc-apple-darwin8 --build=$(gcc -dumpmachine) --with-build-python=../host_build/python --with-ensurepip=no
+          PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH MACOSX_DEPLOYMENT_TARGET=10.4 MACHDEP=Darwin CONFIG_SITE=./config.site-powerpc-apple-darwin8 ../cpython/configure CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" BLDSHARED="powerpc-apple-darwin8-gcc -Wl,-undefined,suppress -Wl,-flat_namespace -shared" LDSHARED="powerpc-apple-darwin8-gcc" AS="powerpc-apple-darwin8-as" AR="powerpc-apple-darwin8-ar" RANLIB="powerpc-apple-darwin8-ranlib" CFLAGS="-mmacosx-version-min=10.4 --include "sys/types.h" -include "sys/socket.h" -include "sys/uio.h" -include "sys/resource.h" -include "fcntl.h" -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -DO_NOFOLLOW=0" LDFLAGS="-mmacosx-version-min=10.4 -static-libstdc++ -static-libgcc" --disable-ipv6 --prefix=$GITHUB_WORKSPACE/deploy --host=powerpc-apple-darwin8 --build=$(gcc -dumpmachine) --with-build-python=../host_build/python --with-ensurepip=no --without-readline
           PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH make -j2
           PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH make install -j
 
