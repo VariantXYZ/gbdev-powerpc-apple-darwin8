@@ -1,0 +1,64 @@
+name: Build OpenSSL
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/build_openssl.yml'
+      - '.github/workflows/build_zlib.yml'
+
+  # Run manually
+  workflow_dispatch:
+
+  workflow_call:
+
+jobs:
+  zlib:
+    uses: ./.github/workflows/build_zlib.yml
+
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.4u
+    needs: [zlib]
+
+    steps:
+      - name: Checkout Addendums
+        uses: actions/checkout@v4
+        with:
+          repository: VariantXYZ/MacOSX10.4u_Addendum
+          path: MacOSX10.4u_Addendum
+
+      - name: Create Deployment Directory
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: deploy
+          merge-multiple: true
+
+      - name: Checkout openssl
+        uses: actions/checkout@v4
+        with:
+          repository: openssl/openssl
+          ref: openssl-3.4.0
+          path: 'openssl'
+
+      - name: Install openssl prerequisites
+        run: |
+          apt-get update && apt-get install -y perl
+
+      # It looks like OpenSSL has some strange race conditions when cross-compiling...
+      - name: Build openssl for target
+        run: |
+          cd openssl
+          CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" AS="powerpc-apple-darwin8-as" AR="powerpc-apple-darwin8-ar" RANLIB="powerpc-apple-darwin8-ranlib" CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -DUSE_TIMEGM -I../MacOSX10.4u_Addendum" ./Configure darwin-ppc --prefix=$GITHUB_WORKSPACE/deploy no-threads no-async
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j1 
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j1
+
+      - name: 'Archive'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openssl
+          path: deploy
+          retention-days: 1

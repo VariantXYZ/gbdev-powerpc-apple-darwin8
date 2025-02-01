@@ -1,0 +1,49 @@
+name: Build Zlib
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/build_zlib.yml'
+
+  # Run manually
+  workflow_dispatch:
+
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.4u
+
+    steps:
+      - name: Checkout Addendums
+        uses: actions/checkout@v4
+        with:
+          repository: VariantXYZ/MacOSX10.4u_Addendum
+          path: MacOSX10.4u_Addendum
+
+      - name: Create Deployment Directory
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+
+      - name: Checkout zlib
+        uses: actions/checkout@v4
+        with:
+          repository: madler/zlib
+          ref: v1.3.1
+          path: 'zlib'
+
+      - name: Build zlib for target
+        run: |
+          cd zlib
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" AR="powerpc-apple-darwin8-ar" ./configure --prefix=$GITHUB_WORKSPACE/deploy
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j4
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j
+
+      - name: 'Archive'
+        uses: actions/upload-artifact@v4
+        with:
+          name: zlib
+          path: deploy
+          retention-days: 1
