@@ -1,0 +1,126 @@
+name: Build Git
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/build_git.yml'
+
+  # Run manually
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.4u
+
+    steps:
+      - name: Checkout Addendums
+        uses: actions/checkout@v4
+        with:
+          repository: VariantXYZ/MacOSX10.4u_Addendum
+          path: MacOSX10.4u_Addendum
+
+      - name: Checkout zlib
+        uses: actions/checkout@v4
+        with:
+          repository: madler/zlib
+          ref: v1.3.1
+          path: 'zlib'
+
+      - name: Build zlib for target
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+          cd zlib
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" AR="powerpc-apple-darwin8-ar" ./configure --prefix=$GITHUB_WORKSPACE/deploy
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j4
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j
+
+      # checkout doesn't seem to support external repositories...
+      - name: Checkout libiconv
+        run: |
+          git clone https://git.savannah.gnu.org/git/libiconv.git --depth 1 --branch v1.18 libiconv
+          cd libiconv
+          git submodule update --init --recursive
+
+      - name: Install libiconv prerequisites
+        run: |
+          apt-get update && apt-get install -y gperf groff
+
+      - name: Build libiconv for target
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+          cd libiconv
+          ln -s /usr/bin/aclocal /usr/bin/aclocal-1.17 || echo "aclocal exists"
+          ln -s /usr/bin/automake /usr/bin/automake-1.17 || echo "automake exists"
+          ./gitsub.sh pull
+          ./autogen.sh
+          echo "" > config.site-powerpc-apple-darwin8
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH ./configure CONFIG_SITE=./config.site-powerpc-apple-darwin8 --prefix=$GITHUB_WORKSPACE/deploy CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types" --host=powerpc-apple-darwin8 --build=$(gcc -dumpmachine) --enable-static
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j4
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j
+
+      - name: Checkout openssl
+        uses: actions/checkout@v4
+        with:
+          repository: openssl/openssl
+          ref: openssl-3.4.0
+          path: 'openssl'
+
+      - name: Install openssl prerequisites
+        run: |
+          apt-get update && apt-get install -y perl
+
+      # It looks like OpenSSL has some strange race conditions when cross-compiling...
+      - name: Build openssl for target
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+          cd openssl
+          CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" AS="powerpc-apple-darwin8-as" AR="powerpc-apple-darwin8-ar" RANLIB="powerpc-apple-darwin8-ranlib" CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -DUSE_TIMEGM -I../MacOSX10.4u_Addendum" ./Configure darwin-ppc --prefix=$GITHUB_WORKSPACE/deploy no-threads no-async
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j1 
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j1
+
+      - name: Checkout curl
+        uses: actions/checkout@v4
+        with:
+          repository: curl/curl
+          ref: curl-8_11_1
+          path: 'curl'
+
+      - name: Build curl for target
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+          cd curl
+          autoreconf -fi
+          echo "" > config.site-powerpc-apple-darwin8
+          echo "ac_cv_c_undeclared_builtin_options=''" >> config.site-powerpc-apple-darwin8
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH ./configure CONFIG_SITE=./config.site-powerpc-apple-darwin8 --prefix=$GITHUB_WORKSPACE/deploy CC="powerpc-apple-darwin8-gcc -v" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" CPPFLAGS="-I$GITHUB_WORKSPACE/deploy/include -I$(realpath ..)/MacOSX10.4u_Addendum -include stdlib_addendum.h" CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types" LDFLAGS="-L$GITHUB_WORKSPACE/deploy/lib" --host=powerpc-apple-darwin8 --with-openssl --without-libpsl --without-libgsasl
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j4
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j
+
+      - name: Checkout git
+        uses: actions/checkout@v4
+        with:
+          repository: git/git.git
+          ref: v2.48.1
+          submodules: 'true'
+          path: 'git'
+
+      - name: Build git for target
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+          cd git
+          make configure
+          echo "" > config.site-powerpc-apple-darwin8
+          echo "ac_cv_fread_reads_directories=true" >> config.site-powerpc-apple-darwin8
+          echo "ac_cv_snprintf_returns_bogus=false" >> config.site-powerpc-apple-darwin8
+          echo "ac_cv_iconv_omits_bom=false" >> config.site-powerpc-apple-darwin8
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH ./configure CONFIG_SITE=./config.site-powerpc-apple-darwin8 --prefix=$GITHUB_WORKSPACE/deploy NO_PERL=1 CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" CFLAGS="-DSHA1DC_BIGENDIAN -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -I$GITHUB_WORKSPACE/deploy/include -I$(realpath ..)/MacOSX10.4u_Addendum -include stdlib_addendum.h" LDFLAGS="-L$GITHUB_WORKSPACE/deploy/lib" --host=powerpc-apple-darwin8 --without-tcltk --with-curl --with-openssl --with-iconv
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install uname_S=Darwin uname_R=8.11 CURLDIR=$GITHUB_WORKSPACE/deploy CURL_LDFLAGS="-lcurl" FSMONITOR_DAEMON_BACKEND="" USE_ENHANCED_BASIC_REGULAR_EXPRESSIONS="" -j4
+
+      - name: 'Archive'
+        uses: actions/upload-artifact@v4
+        with:
+          name: git
+          path: deploy
+          retention-days: 1
