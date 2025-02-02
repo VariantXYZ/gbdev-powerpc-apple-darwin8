@@ -52,7 +52,6 @@ jobs:
 
       - name: Build curl for target
         run: |
-          mkdir -p $GITHUB_WORKSPACE/deploy
           cd curl
           autoreconf -fi
           echo "" > config.site-powerpc-apple-darwin8
