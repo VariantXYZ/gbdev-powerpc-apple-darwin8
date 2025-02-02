@@ -1,4 +1,4 @@
-name: Build Git
+name: Build iconv
 
 on:
   push:
