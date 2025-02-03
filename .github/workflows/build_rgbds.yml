@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  rgbds:
     runs-on: ubuntu-latest
     container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-13.3-macosxsdk10.4u
 

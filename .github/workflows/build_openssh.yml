@@ -20,7 +20,7 @@ jobs:
   openssl:
     uses: ./.github/workflows/build_openssl.yml
 
-  build:
+  openssh:
     runs-on: ubuntu-latest
     container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.4u
     needs:
