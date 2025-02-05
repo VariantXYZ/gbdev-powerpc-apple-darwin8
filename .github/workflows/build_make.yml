@@ -1,0 +1,67 @@
+name: Build Make
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/build_make.yml'
+      - '.github/workflows/build_iconv.yml'
+
+  # Run manually
+  workflow_dispatch:
+
+  workflow_call:
+
+jobs:
+  iconv:
+    uses: ./.github/workflows/build_iconv.yml
+
+  make:
+    runs-on: ubuntu-latest
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.4u
+    needs:
+      - iconv
+
+    steps:
+      - name: Checkout Addendums
+        uses: actions/checkout@v4
+        with:
+          repository: VariantXYZ/MacOSX10.4u_Addendum
+          path: MacOSX10.4u_Addendum
+
+      - name: Create Deployment Directory
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: deploy
+          merge-multiple: true
+
+      - name: Checkout Make
+        run: |
+          git clone https://git.savannah.gnu.org/git/make.git --depth 1 --branch 4.4.1 make
+          cd make
+          git submodule update --init --recursive
+
+      - name: Install Make prerequisites
+        run: |
+          apt-get update && apt-get install -y autopoint pkg-config
+
+      - name: Build Make for target
+        run: |
+          cd make
+          ./autopull.sh
+          ./autogen.sh
+          echo "" > config.site-powerpc-apple-darwin8
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH ./configure CONFIG_SITE=./config.site-powerpc-apple-darwin8 --prefix=$GITHUB_WORKSPACE/deploy CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-error=unused-label" --host=powerpc-apple-darwin8 --build=$(gcc -dumpmachine)
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j4
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j
+
+      - name: 'Archive'
+        uses: actions/upload-artifact@v4
+        with:
+          name: make
+          path: deploy
+          retention-days: 1
+          overwrite: true
