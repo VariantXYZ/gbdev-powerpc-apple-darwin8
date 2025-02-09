@@ -1,0 +1,60 @@
+name: Build raylib
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/build_raylib.yml'
+
+  # Run manually
+  workflow_dispatch:
+
+  workflow_call:
+
+jobs:
+  raylib:
+    runs-on: ubuntu-latest
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.4u
+
+    steps:
+      - name: Checkout Addendums
+        uses: actions/checkout@v4
+        with:
+          repository: VariantXYZ/MacOSX10.4u_Addendum
+          path: MacOSX10.4u_Addendum
+
+      - name: Create Deployment Directory
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+
+      - name: Checkout raylib
+        uses: actions/checkout@v4
+        with:
+          repository: variantxyz/raylib
+          ref: master
+          path: 'raylib'
+
+      - name: Install raylib prerequisites
+        run: |
+          apt-get update && apt-get install -y g
+
+      - name: Build raylib for target
+        run: |
+          cd raylib
+
+          cd src
+          PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH make CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types" CC=powerpc-apple-darwin8-gcc CXX=powerpc-apple-darwin8-g++ PLATFORM=PLATFORM_DESKTOP_RGFW PLATFORM_OS=OSX RAYLIB_MODULE_AUDIO=FALSE GRAPHICS=GRAPHICS_API_OPENGL_11 -j
+          cd -
+
+          cd examples
+          PATH=/usr/local/powerpc-apple-darwin8/bin:$PATH make CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types" CC=powerpc-apple-darwin8-gcc CXX=powerpc-apple-darwin8-g++ PLATFORM=PLATFORM_DESKTOP_RGFW PLATFORM_OS=OSX RAYLIB_MODULE_AUDIO=FALSE GRAPHICS=GRAPHICS_API_OPENGL_11 -j core/core_basic_window
+          cd -
+
+
+      - name: 'Archive'
+        uses: actions/upload-artifact@v4
+        with:
+          name: raylib
+          path: deploy
+          retention-days: 1
+          overwrite: true
