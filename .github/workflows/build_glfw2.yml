@@ -1,0 +1,63 @@
+name: Build Glfw2
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/build_glfw2.yml'
+
+  # Run manually
+  workflow_dispatch:
+
+  workflow_call:
+
+jobs:
+  glfw2:
+    runs-on: ubuntu-latest
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.4u
+
+    steps:
+      - name: Checkout Addendums
+        uses: actions/checkout@v4
+        with:
+          repository: VariantXYZ/MacOSX10.4u_Addendum
+          path: MacOSX10.4u_Addendum
+
+      - name: Create Deployment Directory
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+
+      - name: Checkout glfw
+        uses: actions/checkout@v4
+        with:
+          repository: glfw/glfw-legacy
+          ref: master
+          path: 'glfw'
+
+      - name: Build glfw for target
+        run: |
+          cd glfw
+
+          cd lib/carbon
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make PREFIX=$GITHUB_WORKSPACE/deploy CC=powerpc-apple-darwin8-gcc CXX=powerpc-apple-darwin8-g++ -f Makefile.carbon -j install
+          cd -
+
+          cd examples
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make PREFIX=$GITHUB_WORKSPACE/deploy CC=powerpc-apple-darwin8-gcc CXX=powerpc-apple-darwin8-g++ -f Makefile.carbon -j all
+          cd -
+
+      - name: 'Archive'
+        uses: actions/upload-artifact@v4
+        with:
+          name: glfw2
+          path: deploy
+          retention-days: 1
+          overwrite: true
+
+      - name: 'Archive Examples'
+        uses: actions/upload-artifact@v4
+        with:
+          name: glfw2_examples
+          path: glfw/examples
+          retention-days: 1
+          overwrite: true
