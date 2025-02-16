@@ -1,0 +1,46 @@
+name: Build SDL2
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/build_sdl2.yml'
+
+  # Run manually
+  workflow_dispatch:
+
+  workflow_call:
+
+jobs:
+  sdl2:
+    runs-on: ubuntu-latest
+    container: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-macosxsdk10.5
+
+    steps:
+      - name: Create Deployment Directory
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/deploy
+
+      - name: Checkout sdl2
+        uses: actions/checkout@v4
+        with:
+          repository: variantxyz/SDL
+          ref: tiger/release-2.0.3
+          path: 'sdl2'
+
+      - name: Build sdl2 for target
+        run: |
+          cd sdl2
+
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" AR="powerpc-apple-darwin8-ar" ./configure --prefix=$GITHUB_WORKSPACE/deploy --without-x --disable-joystick --disable-haptic --without-cocoa CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -fobjc-exceptions" --host=powerpc-apple-darwin8
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j
+
+      - name: 'Archive'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdl2
+          path: deploy
+          retention-days: 1
+          overwrite: true
+
