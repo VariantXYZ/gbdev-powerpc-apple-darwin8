@@ -32,9 +32,9 @@ jobs:
         run: |
           cd sdl2
 
-          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" AR="powerpc-apple-darwin8-ar" ./configure --prefix=$GITHUB_WORKSPACE/deploy --without-x --disable-joystick --disable-haptic --without-cocoa CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -fobjc-exceptions" --host=powerpc-apple-darwin8
-          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make -j
-          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH make install -j
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH CC="powerpc-apple-darwin8-gcc" CXX="powerpc-apple-darwin8-g++" LD="powerpc-apple-darwin8-gcc" AR="powerpc-apple-darwin8-ar" MACOSX_DEPLOYMENT_TARGET=10.4 ./configure --prefix=$GITHUB_WORKSPACE/deploy --without-x --disable-joystick --disable-haptic --without-cocoa CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -fobjc-exceptions" --host=powerpc-apple-darwin8
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH MACOSX_DEPLOYMENT_TARGET=10.4 make -j
+          PATH=/usr/local/powerpc-apple-darwin8/bin/:$PATH MACOSX_DEPLOYMENT_TARGET=10.4 make install -j
 
       - name: 'Archive'
         uses: actions/upload-artifact@v4
